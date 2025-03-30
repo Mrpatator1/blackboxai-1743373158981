@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>État en Temps Réel - SNCF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold">
+                    <i class="fas fa-bell mr-2"></i>État en Temps Réel
+                </h1>
+                <nav>
+                    <ul class="flex space-x-6">
+                        <li><a href="index.html" class="hover:text-blue-200"><i class="fas fa-home mr-1"></i>Accueil</a></li>
+                        <li><a href="timetable.html" class="hover:text-blue-200"><i class="fas fa-clock mr-1"></i>Horaires</a></li>
+                        <li><a href="routes.html" class="hover:text-blue-200"><i class="fas fa-route mr-1"></i>Lignes</a></li>
+                        <li><a href="stations.html" class="hover:text-blue-200"><i class="fas fa-map-marker-alt mr-1"></i>Gares</a></li>
+                        <li><a href="real-time.html" class="hover:text-blue-200 font-medium"><i class="fas fa-bell mr-1"></i>État en temps réel</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold">Statut des trains en temps réel</h2>
+            <button onclick="refreshStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-sync-alt mr-2"></i>Actualiser
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow text-center">
+                <div class="text-5xl font-bold text-green-600 mb-2" id="onTimeCount">0</div>
+                <div class="text-gray-600">Trains à l'heure</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow text-center">
+                <div class="text-5xl font-bold text-yellow-600 mb-2" id="delayedCount">0</div>
+                <div class="text-gray-600">Trains retardés</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow text-center">
+                <div class="text-5xl font-bold text-red-600 mb-2" id="cancelledCount">0</div>
+                <div class="text-gray-600">Trains annulés</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Train</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ligne</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Départ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrivée</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Détails</th>
+                    </tr>
+                </thead>
+                <tbody id="statusBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Status data will be loaded here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4">Alertes réseau</h3>
+            <div id="alertsContainer" class="space-y-4">
+                <!-- Alerts will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-xl font-bold mb-2"><i class="fas fa-train mr-2"></i>SNCF Gestion</h3>
+                    <p class="text-gray-400">Système de gestion du réseau ferroviaire français</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-linkedin text-xl"></i></a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 SNCF Gestion. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Load status when page loads
+        document.addEventListener('DOMContentLoaded', loadStatus);
+
+        function loadStatus() {
+            // In a real app, this would fetch from an API
+            // For demo, we'll generate random statuses based on timetables
+            const timetables = getTimetables();
+            const routes = getRoutes();
+            const tbody = document.getElementById('statusBody');
+            tbody.innerHTML = '';
+
+            if (timetables.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Aucun horaire enregistré</td></tr>';
+                return;
+            }
+
+            let onTimeCount = 0;
+            let delayedCount = 0;
+            let cancelledCount = 0;
+
+            timetables.forEach(timetable => {
+                // Find route for this timetable
+                const route = routes.find(r => 
+                    r.startStation === timetable.stations[0] && 
+                    r.endStation === timetable.stations[timetable.stations.length - 1]
+                ) || { name: 'Inconnue' };
+
+                // Generate random status
+                const status = Math.random();
+                let statusText, statusClass, delay, details;
+
+                if (status < 0.7) {
+                    // On time
+                    statusText = 'À l\'heure';
+                    statusClass = 'bg-green-100 text-green-800';
+                    delay = '';
+                    details = '';
+                    onTimeCount++;
+                } else if (status < 0.95) {
+                    // Delayed
+                    const minutes = Math.floor(Math.random() * 60) + 5;
+                    statusText = 'Retardé';
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                    delay = `+${minutes} min`;
+                    details = 'Retard lié à des travaux';
+                    delayedCount++;
+                } else {
+                    // Cancelled
+                    statusText = 'Annulé';
+                    statusClass = 'bg-red-100 text-red-800';
+                    delay = '';
+                    details = 'Annulation pour cause de grève';
+                    cancelledCount++;
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${timetable.trainId}</td>
+                    <td class="px-6 py-4">${route.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${timetable.departure} ${delay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${timetable.arrival} ${delay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">${details}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update counters
+            document.getElementById('onTimeCount').textContent = onTimeCount;
+            document.getElementById('delayedCount').textContent = delayedCount;
+            document.getElementById('cancelledCount').textContent = cancelledCount;
+
+            // Load alerts
+            loadAlerts();
+        }
+
+        function loadAlerts() {
+            const alerts = [
+                {
+                    id: 1,
+                    type: 'warning',
+                    title: 'Travaux sur la ligne Paris-Lyon',
+                    message: 'Des travaux de maintenance sont en cours entre Paris et Lyon. Des retards sont à prévoir.',
+                    time: 'Aujourd\'hui, 08:00'
+                },
+                {
+                    id: 2,
+                    type: 'info',
+                    title: 'Nouvelle signalisation',
+                    message: 'Mise en place d\'un nouveau système de signalisation sur la ligne Lyon-Grenoble. Service normal.',
+                    time: 'Hier, 16:30'
+                }
+            ];
+
+            const container = document.getElementById('alertsContainer');
+            container.innerHTML = '';
+
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `p-4 rounded-lg border-l-4 ${alert.type === 'warning' ? 'bg-yellow-50 border-yellow-400' : 'bg-blue-50 border-blue-400'}`;
+                alertDiv.innerHTML = `
+                    <div class="flex justify-between">
+                        <h4 class="font-bold ${alert.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'}">${alert.title}</h4>
+                        <span class="text-sm text-gray-500">${alert.time}</span>
+                    </div>
+                    <p class="mt-2 ${alert.type === 'warning' ? 'text-yellow-700' : 'text-blue-700'}">${alert.message}</p>
+                `;
+                container.appendChild(alertDiv);
+            });
+        }
+
+        function refreshStatus() {
+            // Show loading state
+            const tbody = document.getElementById('statusBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Actualisation en cours...</td></tr>';
+
+            // Simulate API call delay
+            setTimeout(() => {
+                loadStatus();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
