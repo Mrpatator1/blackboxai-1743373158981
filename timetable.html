@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Création de Trains | SNCF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .station-entry {
+            transition: all 0.2s ease;
+        }
+        .station-entry:hover {
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="fas fa-train text-blue-600 mr-2"></i>
+                Créer un nouveau train
+            </h1>
+
+            <form id="trainForm" class="space-y-4">
+                <!-- Numéro de train -->
+                <div>
+                    <label for="trainNumber" class="block text-sm font-medium text-gray-700 mb-1">Numéro de train*</label>
+                    <input type="text" id="trainNumber" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+
+                <!-- Gares principales -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="departureStation" class="block text-sm font-medium text-gray-700 mb-1">Gare de départ*</label>
+                        <select id="departureStation" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">-- Sélectionnez --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="arrivalStation" class="block text-sm font-medium text-gray-700 mb-1">Gare d'arrivée*</label>
+                        <select id="arrivalStation" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">-- Sélectionnez --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Gares intermédiaires -->
+                <div class="mt-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-medium text-gray-800">Gares desservies</h3>
+                        <button type="button" onclick="addStationRow()" 
+                                class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                            <i class="fas fa-plus-circle mr-1"></i> Ajouter une gare
+                        </button>
+                    </div>
+                    <div id="stationsContainer" class="space-y-3">
+                        <!-- Gares ajoutées dynamiquement -->
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition">
+                        Enregistrer le train
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Liste des trains existants -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-list-ul text-blue-600 mr-2"></i>
+                Trains existants
+            </h2>
+            <div id="existingTrains" class="space-y-3">
+                <!-- Les trains seront chargés ici -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fonction pour ajouter une ligne de gare
+        function addStationRow(station = '', arrival = '', stop = '') {
+            const container = document.getElementById('stationsContainer');
+            const id = Date.now();
+            
+            const row = document.createElement('div');
+            row.className = 'station-entry bg-gray-50 p-3 rounded-lg border border-gray-200';
+            row.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                    <div>
+                        <input type="text" placeholder="Nom de la gare" value="${station}"
+                               class="station-name w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <input type="time" placeholder="Heure arrivée" value="${arrival}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" placeholder="Arrêt (min)" value="${stop}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <button type="button" onclick="this.closest('.station-entry').remove()"
+                                class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        // Initialisation
+        function loadStationsIntoSelect(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">-- Sélectionnez --</option>';
+            
+            const stations = getStations();
+            stations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.name;
+                option.textContent = station.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Rafraîchir les gares quand elles sont mises à jour
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'stationsUpdated') {
+                loadStationsIntoSelect('departureStation');
+                loadStationsIntoSelect('arrivalStation');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Charger les gares disponibles
+            loadStationsIntoSelect('departureStation');
+            loadStationsIntoSelect('arrivalStation');
+            ['departureStation', 'arrivalStation'].forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">-- Sélectionnez --</option>';
+                stations.forEach(station => {
+                    const option = document.createElement('option');
+                    option.value = station.name;
+                    option.textContent = station.name;
+                    select.appendChild(option);
+                });
+            });
+
+            // Ajouter une ligne vide initiale
+            addStationRow();
+
+            // Gestion du formulaire
+            document.getElementById('trainForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Récupération des données du formulaire
+                const trainData = {
+                    number: document.getElementById('trainNumber').value,
+                    departure: document.getElementById('departureStation').value,
+                    arrival: document.getElementById('arrivalStation').value,
+                    stations: []
+                };
+
+                // Traitement des gares intermédiaires
+                document.querySelectorAll('.station-entry').forEach(entry => {
+                    const station = entry.querySelector('.station-name').value.trim();
+                    const time = entry.querySelector('input[type="time"]').value;
+                    const stop = entry.querySelector('input[type="number"]').value;
+
+                    if (station) {
+                        trainData.stations.push({
+                            name: station,
+                            arrival: time,
+                            stop: stop || 0
+                        });
+                    }
+                });
+
+                // Sauvegarde
+                const trains = JSON.parse(localStorage.getItem('trains') || '[]');
+                trains.push(trainData);
+                localStorage.setItem('trains', JSON.stringify(trains));
+                
+                // Réinitialisation
+                this.reset();
+                document.getElementById('stationsContainer').innerHTML = '';
+                addStationRow();
+                
+                alert('Train créé avec succès !');
+            });
+        });
+    </script>
+</body>
+</html>
