@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Gares | SNCF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .station-card {
+            transition: all 0.2s ease;
+        }
+        .station-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-map-marker-alt text-blue-600 mr-3"></i>
+                Gestion des Gares SNCF
+            </h1>
+        </header>
+
+        <!-- Formulaire de création -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-plus-circle text-blue-500 mr-2"></i>
+                Ajouter une nouvelle gare
+            </h2>
+            
+            <form id="stationForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="stationName" class="block text-sm font-medium text-gray-700 mb-1">Nom de la gare*</label>
+                    <input type="text" id="stationName" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="city" class="block text-sm font-medium text-gray-700 mb-1">Ville*</label>
+                    <input type="text" id="city" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="coordinates" class="block text-sm font-medium text-gray-700 mb-1">Coordonnées GPS*</label>
+                    <input type="text" id="coordinates" placeholder="latitude,longitude" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">Format: 48.8446,2.3737</p>
+                </div>
+
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Catégorie*</label>
+                    <select id="category" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Sélectionnez...</option>
+                        <option value="grande_ligne">Grande Ligne</option>
+                        <option value="ter">TER</option>
+                        <option value="transilien">Transilien</option>
+                        <option value="international">International</option>
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="submit" 
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">
+                        <i class="fas fa-save mr-2"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Liste des gares -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold flex items-center">
+                    <i class="fas fa-list-ol text-blue-500 mr-2"></i>
+                    Liste des gares
+                </h2>
+                <div class="relative w-64">
+                    <input type="text" id="searchInput" placeholder="Rechercher une gare..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="stationsContainer" class="space-y-3">
+                <!-- Les gares seront chargées ici dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStations();
+            setupEventListeners();
+        });
+
+        // Charger les gares
+        function loadStations() {
+            const stations = getStations();
+            const container = document.getElementById('stationsContainer');
+            
+            if (stations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-map-marker-alt text-4xl mb-3"></i>
+                        <p>Aucune gare enregistrée</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            stations.forEach(station => {
+                const card = document.createElement('div');
+                card.className = 'station-card bg-gray-50 p-4 rounded-lg border border-gray-200';
+                
+                // Déterminer la couleur en fonction de la catégorie
+                let badgeColor = 'bg-gray-100 text-gray-800';
+                if (station.category === 'grande_ligne') badgeColor = 'bg-blue-100 text-blue-800';
+                if (station.category === 'ter') badgeColor = 'bg-green-100 text-green-800';
+                if (station.category === 'transilien') badgeColor = 'bg-purple-100 text-purple-800';
+                if (station.category === 'international') badgeColor = 'bg-yellow-100 text-yellow-800';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-lg">${station.name}</h3>
+                            <div class="flex items-center mt-1">
+                                <span class="category-badge ${badgeColor} mr-2">
+                                    ${getCategoryLabel(station.category)}
+                                </span>
+                                <span class="text-gray-600">${station.city}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1">
+                                <i class="fas fa-map-marker-alt mr-1"></i>${station.coordinates}
+                            </p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editStationPrompt(${station.id})" 
+                                    class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="confirmDelete(${station.id})" 
+                                    class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Obtenir le libellé de la catégorie
+        function getCategoryLabel(category) {
+            const labels = {
+                'grande_ligne': 'Grande Ligne',
+                'ter': 'TER',
+                'transilien': 'Transilien', 
+                'international': 'International'
+            };
+            return labels[category] || 'Non classée';
+        }
+
+        // Configurer les événements
+        function setupEventListeners() {
+            // Formulaire d'ajout
+            document.getElementById('stationForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('stationName').value;
+                const city = document.getElementById('city').value;
+                const coordinates = document.getElementById('coordinates').value;
+                const category = document.getElementById('category').value;
+                
+                if (addStation(name, city, coordinates, category)) {
+                    this.reset();
+                    loadStations();
+                    showAlert('Gare ajoutée avec succès', 'success');
+                }
+            });
+
+            // Recherche
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const cards = document.querySelectorAll('.station-card');
+                
+                cards.forEach(card => {
+                    const name = card.querySelector('h3').textContent.toLowerCase();
+                    const city = card.querySelector('span.text-gray-600').textContent.toLowerCase();
+                    card.style.display = (name.includes(searchTerm) || city.includes(searchTerm)) 
+                        ? '' : 'none';
+                });
+            });
+        }
+
+        // Fonctions utilitaires
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`;
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+
+        // Synchronisation entre onglets
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'stationsUpdated') {
+                loadStations();
+            }
+        });
+    </script>
+    <script>
+        // Gestionnaire d'édition
+        async function handleEdit(stationId) {
+            const station = getStationById(stationId);
+            if (!station) return;
+        
+            // Pré-remplir le formulaire
+            document.getElementById('stationId').value = station.id;
+            document.getElementById('editName').value = station.name;
+            document.getElementById('editCity').value = station.city;
+            document.getElementById('editCoords').value = station.coordinates;
+            document.getElementById('editCategory').value = station.category || StationCategories.GRANDE_LIGNE;
+        
+            // Afficher la modale
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        
+        // Soumission du formulaire
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const updates = {
+                name: document.getElementById('editName').value.trim(),
+                city: document.getElementById('editCity').value.trim(),
+                coordinates: document.getElementById('editCoords').value.trim(),
+                category: document.getElementById('editCategory').value
+            };
+        
+            const stationId = document.getElementById('stationId').value;
+            
+            if (await updateStation(stationId, updates)) {
+                closeModal();
+                refreshStations();
+                showNotification('Gare mise à jour avec succès', 'success');
+            }
+        });
+        
+        // Gestionnaire de suppression
+        async function handleDelete(stationId) {
+            if (confirm('Confirmez la suppression de cette gare ?')) {
+                if (await deleteStation(stationId)) {
+                    refreshStations();
+                    showNotification('Gare supprimée', 'success');
+                }
+            }
+        }
+        
+        // Rafraîchissement de l'affichage
+        function refreshStations() {
+            const stations = getStations();
+            const container = document.getElementById('stationsContainer');
+            
+            container.innerHTML = stations.map(station => `
+                <div class="station-card">
+                    <h3>${station.name}</h3>
+                    <p>${station.city} • ${station.category}</p>
+                    <div class="station-actions">
+                        <button onclick="handleEdit(${station.id})">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        <button onclick="handleDelete(${station.id})" class="delete-btn">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshStations();
+            initEventListeners();
+        });
+        </script>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Modifier Gare</h2>
+        <form id="editForm">
+            <input type="hidden" id="stationId">
+            <div class="form-group">
+                <label for="editName">Nom</label>
+                <input type="text" id="editName" required>
+            </div>
+            <div class="form-group">
+                <label for="editCity">Ville</label>
+                <input type="text" id="editCity" required>
+            </div>
+            <div class="form-group">
+                <label for="editCoords">Coordonnées</label>
+                <input type="text" id="editCoords" required>
+            </div>
+            <div class="form-group">
+                <label for="editCategory">Catégorie</label>
+                <select id="editCategory" required>
+                    <option value="${StationCategories.GRANDE_LIGNE}">Grande Ligne</option>
+                    <option value="${StationCategories.TER}">TER</option>
+                    <option value="${StationCategories.TRANSILIEN}">Transilien</option>
+                    <option value="${StationCategories.INTERNATIONAL}">International</option>
+                </select>
+            </div>
+            <button type="submit">Enregistrer</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
