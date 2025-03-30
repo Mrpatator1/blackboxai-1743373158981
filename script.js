@@ -192,3 +192,46 @@ function openAddModal() {
     });
     document.getElementById('timetableModal').classList.remove('hidden');
 }
+
+// ===== GESTION AVANCEE DES GARES =====
+const StationCategories = {
+    GRANDE_LIGNE: 'grande_ligne',
+    TER: 'ter',
+    TRANSILIEN: 'transilien',
+    INTERNATIONAL: 'international'
+};
+
+function validateStationData(station) {
+    if (!station.name || !station.city || !station.coordinates) {
+        throw new Error('Tous les champs obligatoires doivent être remplis');
+    }
+    if (!/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(station.coordinates)) {
+        throw new Error('Format de coordonnées invalide');
+    }
+    return true;
+}
+
+async function updateStation(id, updates) {
+    try {
+        validateStationData(updates);
+        const stations = getStations().map(s => 
+            s.id === id ? { ...s, ...updates } : s
+        );
+        await saveStations(stations);
+        return true;
+    } catch (error) {
+        console.error("Erreur mise à jour:", error);
+        return false;
+    }
+}
+
+async function deleteStation(id) {
+    try {
+        const stations = getStations().filter(s => s.id !== id);
+        await saveStations(stations);
+        return true;
+    } catch (error) {
+        console.error("Erreur suppression:", error);
+        return false;
+    }
+}
