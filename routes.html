@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Lignes - SNCF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .route-map {
+            background-image: url('https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg');
+            background-size: cover;
+            background-position: center;
+            height: 300px;
+            position: relative;
+        }
+        .station-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #3B82F6;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold">
+                    <i class="fas fa-route mr-2"></i>Gestion des Lignes
+                </h1>
+                <nav>
+                    <ul class="flex space-x-6">
+                        <li><a href="index.html" class="hover:text-blue-200"><i class="fas fa-home mr-1"></i>Accueil</a></li>
+                        <li><a href="prochains-departs.html" class="hover:text-blue-200"><i class="fas fa-train mr-1"></i>Prochains trains</a></li>
+                        <li><a href="timetable.html" class="hover:text-blue-200"><i class="fas fa-clock mr-1"></i>Horaires</a></li>
+                        <li><a href="routes.html" class="hover:text-blue-200 font-medium"><i class="fas fa-route mr-1"></i>Lignes</a></li>
+                        <li><a href="stations.html" class="hover:text-blue-200"><i class="fas fa-map-marker-alt mr-1"></i>Gares</a></li>
+                        <li><a href="real-time.html" class="hover:text-blue-200"><i class="fas fa-bell mr-1"></i>État en temps réel</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold">Liste des lignes ferroviaires</h2>
+            <button onclick="openAddRouteModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-plus mr-2"></i>Ajouter une ligne
+            </button>
+        </div>
+
+        <div class="mb-8">
+            <div class="route-map rounded-lg shadow mb-4" id="routeMap">
+                <!-- Map with route visualization will be rendered here -->
+            </div>
+            <p class="text-gray-600 text-sm">Visualisation des principales lignes ferroviaires françaises</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gare de départ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gare d'arrivée</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distance (km)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durée</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="routesBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Routes data will be loaded here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add/Edit Route Modal -->
+    <div id="routeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="routeModalTitle">Ajouter une ligne</h3>
+                <button onclick="closeRouteModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="routeForm" onsubmit="handleRouteSubmit(event)">
+                <input type="hidden" id="routeId">
+                <div class="mb-4">
+                    <label for="routeName" class="block text-sm font-medium text-gray-700 mb-1">Nom de la ligne</label>
+                    <input type="text" id="routeName" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div class="mb-4">
+                    <label for="startStation" class="block text-sm font-medium text-gray-700 mb-1">Gare de départ</label>
+                    <select id="startStation" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <!-- Stations will be loaded by JavaScript -->
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="endStation" class="block text-sm font-medium text-gray-700 mb-1">Gare d'arrivée</label>
+                    <select id="endStation" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <!-- Stations will be loaded by JavaScript -->
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="distance" class="block text-sm font-medium text-gray-700 mb-1">Distance (km)</label>
+                    <input type="number" id="distance" min="1" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div class="mb-4">
+                    <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">Durée (HH:mm)</label>
+                    <input type="text" id="duration" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeRouteModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteRouteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="mb-4">
+                <h3 class="text-xl font-bold">Confirmer la suppression</h3>
+                <p class="mt-2">Êtes-vous sûr de vouloir supprimer cette ligne ?</p>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeDeleteRouteModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annuler</button>
+                <button onclick="confirmRouteDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-xl font-bold mb-2"><i class="fas fa-train mr-2"></i>SNCF Gestion</h3>
+                    <p class="text-gray-400">Système de gestion du réseau ferroviaire français</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-linkedin text-xl"></i></a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 SNCF Gestion. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Load routes and stations when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRoutes();
+            loadStationsForSelect();
+        });
+
+        function loadRoutes() {
+            const routes = getRoutes();
+            const tbody = document.getElementById('routesBody');
+            tbody.innerHTML = '';
+
+            if (routes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Aucune ligne enregistrée</td></tr>';
+                return;
+            }
+
+            routes.forEach(route => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${route.name}</td>
+                    <td class="px-6 py-4">${route.startStation}</td>
+                    <td class="px-6 py-4">${route.endStation}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${route.distance} km</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${route.duration}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="editRoute(${route.id})" class="text-blue-600 hover:text-blue-800 mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="openDeleteRouteModal(${route.id})" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update map visualization
+            updateRouteMap(routes);
+        }
+
+        function loadStationsForSelect() {
+            const stations = getStations();
+            const startSelect = document.getElementById('startStation');
+            const endSelect = document.getElementById('endStation');
+
+            startSelect.innerHTML = '';
+            endSelect.innerHTML = '';
+
+            stations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.name;
+                option.textContent = station.name;
+                startSelect.appendChild(option.cloneNode(true));
+                endSelect.appendChild(option);
+            });
+        }
+
+        function updateRouteMap(routes) {
+            const map = document.getElementById('routeMap');
+            map.innerHTML = '';
+
+            if (routes.length === 0) return;
+
+            // Simple visualization - in a real app you would use a proper mapping library
+            routes.forEach(route => {
+                // Just show start and end stations for demo purposes
+                const startMarker = document.createElement('div');
+                startMarker.className = 'station-marker';
+                startMarker.style.top = '50%';
+                startMarker.style.left = '20%';
+                startMarker.title = route.startStation;
+                map.appendChild(startMarker);
+
+                const endMarker = document.createElement('div');
+                endMarker.className = 'station-marker';
+                endMarker.style.top = '50%';
+                endMarker.style.left = '80%';
+                endMarker.title = route.endStation;
+                map.appendChild(endMarker);
+
+                // Draw a line between markers
+                const line = document.createElement('div');
+                line.style.position = 'absolute';
+                line.style.top = '50%';
+                line.style.left = '20%';
+                line.style.width = '60%';
+                line.style.height = '2px';
+                line.style.backgroundColor = '#3B82F6';
+                line.style.transform = 'translateY(-1px)';
+                map.appendChild(line);
+            });
+        }
+
+        function openAddRouteModal() {
+            document.getElementById('routeModalTitle').textContent = 'Ajouter une ligne';
+            document.getElementById('routeId').value = '';
+            document.getElementById('routeForm').reset();
+            document.getElementById('routeModal').classList.remove('hidden');
+        }
+
+        function editRoute(id) {
+            const route = getRoutes().find(r => r.id === id);
+            if (!route) return;
+
+            document.getElementById('routeModalTitle').textContent = 'Modifier une ligne';
+            document.getElementById('routeId').value = route.id;
+            document.getElementById('routeName').value = route.name;
+            document.getElementById('startStation').value = route.startStation;
+            document.getElementById('endStation').value = route.endStation;
+            document.getElementById('distance').value = route.distance;
+            document.getElementById('duration').value = route.duration;
+
+            document.getElementById('routeModal').classList.remove('hidden');
+        }
+
+        function closeRouteModal() {
+            document.getElementById('routeModal').classList.add('hidden');
+        }
+
+        function handleRouteSubmit(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('routeId').value;
+            const name = document.getElementById('routeName').value;
+            const startStation = document.getElementById('startStation').value;
+            const endStation = document.getElementById('endStation').value;
+            const distance = document.getElementById('distance').value;
+            const duration = document.getElementById('duration').value;
+
+            if (startStation === endStation) {
+                alert('La gare de départ et d\'arrivée doivent être différentes');
+                return;
+            }
+
+            if (!/^([0-9]+h)?[0-5]?[0-9]m$/.test(duration)) {
+                alert('Veuillez entrer une durée valide (ex: 2h30m ou 45m)');
+                return;
+            }
+
+            const routes = getRoutes();
+            let updatedRoutes;
+
+            if (id) {
+                // Update existing route
+                updatedRoutes = routes.map(r => 
+                    r.id === parseInt(id) ? { ...r, name, startStation, endStation, distance, duration } : r
+                );
+            } else {
+                // Add new route
+                const newId = generateId(routes);
+                updatedRoutes = [...routes, { id: newId, name, startStation, endStation, distance, duration }];
+            }
+
+            saveRoutes(updatedRoutes);
+            closeRouteModal();
+            loadRoutes();
+        }
+
+        let routeToDelete = null;
+
+        function openDeleteRouteModal(id) {
+            routeToDelete = id;
+            document.getElementById('deleteRouteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteRouteModal() {
+            routeToDelete = null;
+            document.getElementById('deleteRouteModal').classList.add('hidden');
+        }
+
+        function confirmRouteDelete() {
+            if (!routeToDelete) return;
+
+            const routes = getRoutes();
+            const updatedRoutes = routes.filter(r => r.id !== routeToDelete);
+            saveRoutes(updatedRoutes);
+            closeDeleteRouteModal();
+            loadRoutes();
+        }
+    </script>
+</body>
+</html>
