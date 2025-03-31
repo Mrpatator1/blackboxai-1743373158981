@@ -302,3 +302,53 @@ function deleteStation(id) {
     const stations = getStations().filter(station => station.id !== id);
     return saveStations(stations);
 }
+
+// Fonction pour charger et afficher les gares
+function loadStations() {
+    const stations = getStations();
+    const container = document.getElementById('stationsContainer');
+    
+    if (!container) {
+        console.error('Element stationsContainer non trouvé');
+        return;
+    }
+
+    container.innerHTML = stations.map(station => `
+        <div class="station-card bg-white p-4 rounded-lg shadow mb-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold">${station.name}</h3>
+                    <p class="text-gray-600">${station.city}</p>
+                    ${station.coordinates ? `
+                    <p class="text-sm text-gray-500 mt-1">
+                        <i class="fas fa-map-marker-alt mr-1"></i>${station.coordinates}
+                    </p>` : ''}
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="openEditModal('${station.id}')" 
+                            class="text-blue-600 hover:text-blue-800 p-2">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="confirmDelete('${station.id}')" 
+                            class="text-red-600 hover:text-red-800 p-2">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    if (stations.length === 0) {
+        container.innerHTML = '<p class="text-center py-8 text-gray-500">Aucune gare enregistrée</p>';
+    }
+}
+
+// Ajoutez à la fin de script.js
+window.StationsManager = {
+    getStations,
+    addStation,
+    updateStation,
+    deleteStation,
+    loadStations,
+    setupEventListeners
+};
