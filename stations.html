@@ -98,6 +98,10 @@
 
     <script src="js/stationManager.js"></script>
     <script>
+        // Après création/suppression d'une gare
+        stationManager.saveStations();
+        </script>
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
             stationManager.updateAllUI();
             
