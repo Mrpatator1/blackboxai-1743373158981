@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Gares | SNCF</title>
+    <title>Gestion des Gares SNCF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -54,8 +54,8 @@
                 </div>
                 
                 <div>
-                    <label for="coordinates" class="block text-sm font-medium text-gray-700 mb-1">Coordonnées GPS*</label>
-                    <input type="text" id="coordinates" placeholder="latitude,longitude" required
+                    <label for="coordinates" class="block text-sm font-medium text-gray-700 mb-1">Coordonnées GPS</label>
+                    <input type="text" id="coordinates" placeholder="latitude,longitude"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <p class="text-xs text-gray-500 mt-1">Format: 48.8446,2.3737</p>
                 </div>
@@ -64,7 +64,6 @@
                     <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Catégorie*</label>
                     <select id="category" required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Sélectionnez...</option>
                         <option value="grande_ligne">Grande Ligne</option>
                         <option value="ter">TER</option>
                         <option value="transilien">Transilien</option>
@@ -103,10 +102,118 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Modale d'édition -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold">Modifier la gare</h3>
+                <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div>
+                    <label for="editName" class="block text-sm font-medium text-gray-700 mb-1">Nom*</label>
+                    <input type="text" id="editName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="editCity" class="block text-sm font-medium text-gray-700 mb-1">Ville*</label>
+                    <input type="text" id="editCity" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="editCoords" class="block text-sm font-medium text-gray-700 mb-1">Coordonnées</label>
+                    <input type="text" id="editCoords" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="editCategory" class="block text-sm font-medium text-gray-700 mb-1">Catégorie*</label>
+                    <select id="editCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="grande_ligne">Grande Ligne</option>
+                        <option value="ter">TER</option>
+                        <option value="transilien">Transilien</option>
+                        <option value="international">International</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeEditModal()" 
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Annuler
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chargement avec gestion d'erreur -->
     <script>
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Erreur de chargement de ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        async function initializeApp() {
+            try {
+                await loadScript('script.js');
+                
+                // Vérification des fonctions essentielles
+                const requiredFunctions = ['addStation', 'getStations', 'updateStation', 'deleteStation'];
+                const missingFunctions = requiredFunctions.filter(fn => typeof window[fn] !== 'function');
+                
+                if (missingFunctions.length > 0) {
+                    throw new Error(`Fonctions manquantes: ${missingFunctions.join(', ')}`);
+                }
+
+                // Initialisation de l'application
+                loadStations();
+                setupEventListeners();
+                
+            } catch (error) {
+                console.error('Erreur initialisation:', error);
+                document.body.innerHTML = `
+                    <div class="p-8 text-center text-red-600">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <h2 class="text-xl font-bold mb-2">Erreur de chargement</h2>
+                        <p>${error.message}</p>
+                        <button onclick="window.location.reload()" 
+                                class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg">
+                            Recharger la page
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Démarrer l'application
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+    <script>
+        // Vérification des fonctions requises
+        function checkRequiredFunctions() {
+            const requiredFunctions = ['addStation', 'getStations', 'updateStation', 'deleteStation'];
+            for (const func of requiredFunctions) {
+                if (typeof window[func] !== 'function') {
+                    console.error(`Fonction manquante: ${func}`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
+            if (!checkRequiredFunctions()) {
+                alert('Erreur: Certaines fonctions requises ne sont pas disponibles. Veuillez recharger la page.');
+                return;
+            }
             loadStations();
             setupEventListeners();
         });
@@ -147,16 +254,17 @@
                                 </span>
                                 <span class="text-gray-600">${station.city}</span>
                             </div>
+                            ${station.coordinates ? `
                             <p class="text-sm text-gray-500 mt-1">
                                 <i class="fas fa-map-marker-alt mr-1"></i>${station.coordinates}
-                            </p>
+                            </p>` : ''}
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="editStationPrompt(${station.id})" 
+                            <button onclick="openEditModal('${station.id}')" 
                                     class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="confirmDelete(${station.id})" 
+                            <button onclick="confirmDelete('${station.id}')" 
                                     class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -188,10 +296,32 @@
                 const coordinates = document.getElementById('coordinates').value;
                 const category = document.getElementById('category').value;
                 
-                if (addStation(name, city, coordinates, category)) {
+                try {
+                    addStation({ name, city, coordinates, category });
                     this.reset();
                     loadStations();
                     showAlert('Gare ajoutée avec succès', 'success');
+                } catch (error) {
+                    showAlert(error.message, 'error');
+                }
+            });
+
+            // Formulaire d'édition
+            document.getElementById('editForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const id = document.getElementById('editId').value;
+                const name = document.getElementById('editName').value;
+                const city = document.getElementById('editCity').value;
+                const coordinates = document.getElementById('editCoords').value;
+                const category = document.getElementById('editCategory').value;
+                
+                try {
+                    updateStation(id, { name, city, coordinates, category });
+                    closeEditModal();
+                    loadStations();
+                    showAlert('Gare modifiée avec succès', 'success');
+                } catch (error) {
+                    showAlert(error.message, 'error');
                 }
             });
 
@@ -209,11 +339,42 @@
             });
         }
 
-        // Fonctions utilitaires
-        function showAlert(message, type) {
+        // Gestion de la modale d'édition
+        function openEditModal(id) {
+            const station = getStations().find(s => s.id === id);
+            if (!station) return;
+            
+            document.getElementById('editId').value = station.id;
+            document.getElementById('editName').value = station.name;
+            document.getElementById('editCity').value = station.city;
+            document.getElementById('editCoords').value = station.coordinates || '';
+            document.getElementById('editCategory').value = station.category || 'grande_ligne';
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // Confirmation de suppression
+        function confirmDelete(id) {
+            if (confirm('Voulez-vous vraiment supprimer cette gare ?')) {
+                try {
+                    deleteStation(id);
+                    loadStations();
+                    showAlert('Gare supprimée avec succès', 'success');
+                } catch (error) {
+                    showAlert(error.message, 'error');
+                }
+            }
+        }
+
+        // Affichage des notifications
+        function showAlert(message, type = 'success') {
             const alert = document.createElement('div');
-            alert.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
-                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            alert.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
             }`;
             alert.textContent = message;
             document.body.appendChild(alert);
@@ -225,116 +386,10 @@
 
         // Synchronisation entre onglets
         window.addEventListener('storage', (event) => {
-            if (event.key === 'stationsUpdated') {
+            if (event.key === 'stations_updated') {
                 loadStations();
             }
         });
     </script>
-    <script>
-        // Gestionnaire d'édition
-        async function handleEdit(stationId) {
-            const station = getStationById(stationId);
-            if (!station) return;
-        
-            // Pré-remplir le formulaire
-            document.getElementById('stationId').value = station.id;
-            document.getElementById('editName').value = station.name;
-            document.getElementById('editCity').value = station.city;
-            document.getElementById('editCoords').value = station.coordinates;
-            document.getElementById('editCategory').value = station.category || StationCategories.GRANDE_LIGNE;
-        
-            // Afficher la modale
-            document.getElementById('editModal').classList.remove('hidden');
-        }
-        
-        // Soumission du formulaire
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const updates = {
-                name: document.getElementById('editName').value.trim(),
-                city: document.getElementById('editCity').value.trim(),
-                coordinates: document.getElementById('editCoords').value.trim(),
-                category: document.getElementById('editCategory').value
-            };
-        
-            const stationId = document.getElementById('stationId').value;
-            
-            if (await updateStation(stationId, updates)) {
-                closeModal();
-                refreshStations();
-                showNotification('Gare mise à jour avec succès', 'success');
-            }
-        });
-        
-        // Gestionnaire de suppression
-        async function handleDelete(stationId) {
-            if (confirm('Confirmez la suppression de cette gare ?')) {
-                if (await deleteStation(stationId)) {
-                    refreshStations();
-                    showNotification('Gare supprimée', 'success');
-                }
-            }
-        }
-        
-        // Rafraîchissement de l'affichage
-        function refreshStations() {
-            const stations = getStations();
-            const container = document.getElementById('stationsContainer');
-            
-            container.innerHTML = stations.map(station => `
-                <div class="station-card">
-                    <h3>${station.name}</h3>
-                    <p>${station.city} • ${station.category}</p>
-                    <div class="station-actions">
-                        <button onclick="handleEdit(${station.id})">
-                            <i class="fas fa-edit"></i> Modifier
-                        </button>
-                        <button onclick="handleDelete(${station.id})" class="delete-btn">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', () => {
-            refreshStations();
-            initEventListeners();
-        });
-        </script>
-
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h2>Modifier Gare</h2>
-        <form id="editForm">
-            <input type="hidden" id="stationId">
-            <div class="form-group">
-                <label for="editName">Nom</label>
-                <input type="text" id="editName" required>
-            </div>
-            <div class="form-group">
-                <label for="editCity">Ville</label>
-                <input type="text" id="editCity" required>
-            </div>
-            <div class="form-group">
-                <label for="editCoords">Coordonnées</label>
-                <input type="text" id="editCoords" required>
-            </div>
-            <div class="form-group">
-                <label for="editCategory">Catégorie</label>
-                <select id="editCategory" required>
-                    <option value="${StationCategories.GRANDE_LIGNE}">Grande Ligne</option>
-                    <option value="${StationCategories.TER}">TER</option>
-                    <option value="${StationCategories.TRANSILIEN}">Transilien</option>
-                    <option value="${StationCategories.INTERNATIONAL}">International</option>
-                </select>
-            </div>
-            <button type="submit">Enregistrer</button>
-        </form>
-    </div>
-</div>
 </body>
 </html>
