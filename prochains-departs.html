@@ -165,5 +165,21 @@
             container.innerHTML = html;
         }
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            stationManager.updateAllStationSelects();
+            
+            window.addEventListener('stationsChanged', () => {
+                stationManager.loadStations();
+                stationManager.updateAllStationSelects();
+            });
+        
+            // Vérification périodique pour les onglets inactifs
+            setInterval(() => {
+                stationManager.loadStations();
+                stationManager.updateAllStationSelects();
+            }, 3000);
+        });
+        </script>
 </body>
 </html>
