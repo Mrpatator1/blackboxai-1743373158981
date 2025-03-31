@@ -196,5 +196,15 @@
             });
         });
     </script>
+    <!-- timetable.html -->
+<select class="station-select">
+    <option value="">Chargement...</option>
+</select>
+
+<script>
+window.addEventListener('stationsUpdated', () => {
+    stationManager.updateStationSelects();
+});
+</script>
 </body>
 </html>
