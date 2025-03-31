@@ -165,21 +165,21 @@
             container.innerHTML = html;
         }
     </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            stationManager.updateAllStationSelects();
-            
-            window.addEventListener('stationsChanged', () => {
-                stationManager.loadStations();
-                stationManager.updateAllStationSelects();
-            });
-        
-            // Vérification périodique pour les onglets inactifs
-            setInterval(() => {
-                stationManager.loadStations();
-                stationManager.updateAllStationSelects();
-            }, 3000);
-        });
-        </script>
+    <!-- prochains-departs.html -->
+<select class="station-select">
+    <option value="">Chargement...</option>
+</select>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    stationManager.updateStationSelects();
+    
+    // Vérifie les mises à jour toutes les 2 secondes
+    setInterval(() => {
+        stationManager.loadStations();
+        stationManager.updateStationSelects();
+    }, 2000);
+});
+</script>
 </body>
 </html>
