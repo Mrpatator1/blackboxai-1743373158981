@@ -235,3 +235,70 @@ async function deleteStation(id) {
         return false;
     }
 }
+
+// ===== GESTION COMPLETE DES GARES =====
+const STATIONS_KEY = 'sncf_stations';
+
+function getStations() {
+    return JSON.parse(localStorage.getItem(STATIONS_KEY)) || [];
+}
+
+function saveStations(stations) {
+    localStorage.setItem(STATIONS_KEY, JSON.stringify(stations));
+    localStorage.setItem('stations_updated', Date.now().toString());
+    return true;
+}
+
+function generateStationId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function validateStation({name, city, coordinates}) {
+    if (!name || !city) {
+        throw new Error('Le nom et la ville sont obligatoires');
+    }
+    if (coordinates && !/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(coordinates)) {
+        throw new Error('Format de coordonnées invalide (ex: 48.8446,2.3737)');
+    }
+    return true;
+}
+
+function addStation(stationData) {
+    try {
+        validateStation(stationData);
+        const stations = getStations();
+        const newStation = {
+            id: generateStationId(),
+            name: stationData.name.trim(),
+            city: stationData.city.trim(),
+            coordinates: stationData.coordinates?.trim() || '',
+            category: stationData.category || 'grande_ligne',
+            createdAt: new Date().toISOString()
+        };
+        stations.push(newStation);
+        saveStations(stations);
+        return newStation;
+    } catch (error) {
+        console.error("Erreur création gare:", error);
+        throw error;
+    }
+}
+
+function updateStation(id, updates) {
+    try {
+        validateStation(updates);
+        const stations = getStations().map(station => 
+            station.id === id ? { ...station, ...updates } : station
+        );
+        saveStations(stations);
+        return true;
+    } catch (error) {
+        console.error("Erreur modification gare:", error);
+        throw error;
+    }
+}
+
+function deleteStation(id) {
+    const stations = getStations().filter(station => station.id !== id);
+    return saveStations(stations);
+}
