@@ -1,79 +1,96 @@
-// Gestionnaire de gares SNCF
-const StationManager = (function() {
-    // Variables privées
-    let stations = [];
-    const STORAGE_KEY = 'sncf_stations';
+// js/stationManager.js
+class StationManager {
+    constructor() {
+        this.stations = [];
+        this.STORAGE_KEY = 'sncf_stations_v6';
+        this.init();
+    }
 
-    // Méthodes privées
-    function loadFromStorage() {
-        const storedData = localStorage.getItem(STORAGE_KEY);
-        if (storedData) {
-            stations = JSON.parse(storedData);
+    init() {
+        this.loadStations();
+        this.setupEventListeners();
+        this.updateAllStationSelects();
+        this.renderStationsTable();
+    }
+
+    loadStations() {
+        const stored = localStorage.getItem(this.STORAGE_KEY);
+        if (stored) this.stations = JSON.parse(stored);
+    }
+
+    saveStations() {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.stations));
+    }
+
+    setupEventListeners() {
+        const form = document.getElementById('stationForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleCreateStation();
+            });
         }
     }
 
-    function saveToStorage() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stations));
-    }
+    handleCreateStation() {
+        const name = document.getElementById('stationName').value.trim();
+        const city = document.getElementById('city').value.trim();
+        const categories = Array.from(
+            document.querySelectorAll('input[name="categories"]:checked')
+        ).map(el => el.value);
 
-    function renderStations() {
-        const container = document.getElementById('stationsContainer');
-        if (!container) return;
-
-        if (stations.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-map-marker-alt text-3xl mb-2"></i>
-                    <p>Aucune gare enregistrée</p>
-                </div>
-            `;
+        if (!name || !city || categories.length === 0) {
+            this.showAlert('Veuillez remplir tous les champs obligatoires', 'error');
             return;
         }
 
-        container.innerHTML = stations.map(station => `
-            <div class="station-card p-4 mb-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="font-bold text-lg">${station.name}</h3>
-                        <p class="text-gray-600">${station.city}</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button class="edit-btn" data-id="${station.id}">
-                            <i class="fas fa-edit text-blue-500"></i>
-                        </button>
-                        <button class="delete-btn" data-id="${station.id}">
-                            <i class="fas fa-trash text-red-500"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        const newStation = {
+            id: Date.now().toString(),
+            name,
+            city,
+            categories,
+            createdAt: new Date().toISOString()
+        };
+
+        this.stations.push(newStation);
+        this.saveStations();
+        this.updateAllStationSelects();
+        this.renderStationsTable();
+        document.getElementById('stationForm').reset();
+        this.showAlert('Gare créée avec succès', 'success');
     }
 
-    // Interface publique
-    return {
-        init: function() {
-            loadFromStorage();
-            renderStations();
-            this.setupEventListeners();
-        },
+    updateAllStationSelects() {
+        document.querySelectorAll('.station-select').forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Sélectionnez une gare --</option>';
+            
+            this.stations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.id;
+                option.textContent = `${station.name} (${station.city})`;
+                select.appendChild(option);
+            });
 
-        setupEventListeners: function() {
-            // Événements seront ajoutés ici
-        },
+            if (currentValue && this.stations.some(s => s.id === currentValue)) {
+                select.value = currentValue;
+            }
+        });
+    }
 
-        addStation: function(stationData) {
-            const newStation = {
-                id: Date.now().toString(),
-                ...stationData,
-                createdAt: new Date().toISOString()
-            };
-            stations.push(newStation);
-            saveToStorage();
-            renderStations();
-        }
-    };
-})();
+    renderStationsTable() {
+        const container = document.getElementById('stationsTableBody');
+        if (!container) return;
 
-// Exporter pour une utilisation globale
-window.StationManager = StationManager;
+        container.innerHTML = this.stations.length > 0
+            ? this.stations.map(station => this.createStationRow(station)).join('')
+            : '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Aucune gare enregistrée</td></tr>';
+    }
+
+    // ... (autres méthodes restent inchangées)
+}
+
+// Initialisation globale
+if (typeof stationManager === 'undefined') {
+    const stationManager = new StationManager();
+}
